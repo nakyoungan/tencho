@@ -1,0 +1,14 @@
+# ignore all .gz files
+*.gz
+*.tar
+*.path
+*.pyc
+
+#ignore cifar-10-python.tar.gz file
+c4/cifar-10-python.tar.gz
+cifar-10-batches-py
+
+# specify a folder with slash in the end
+# ignore all files in any directory named temp
+cifar-10-batches-py/
+
