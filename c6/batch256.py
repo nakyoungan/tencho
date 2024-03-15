@@ -19,8 +19,8 @@ class RNN(nn.Module):
         self.rnn = nn.RNN(input_size=3, hidden_size=8, num_layers=5, batch_first=True)
 
         #주가를 예측하는 MLP 층 정의
-        self.fc1 = nn.Linear(in_features=240, out_features=64)
-        self.fc2 = nn.Linear(in_features=64, out_features=1)
+        self.fc1 = nn.Linear(in_features=240, out_features=256)
+        self.fc2 = nn.Linear(in_features=256, out_features=1)
 
         self.relu = nn.ReLU()   #활성화 함수 정의
 
@@ -71,7 +71,7 @@ dataset = Netflix()
 '''
 모델 학습하기
 
-loader = DataLoader(dataset, batch_size=32)
+loader = DataLoader(dataset, batch_size=256)
 optim = Adam(params = model.parameters(), lr=0.0001)
 
 for epoch in range(200):
@@ -92,8 +92,9 @@ for epoch in range(200):
         optim.step()
 
         iterator.set_description(f"epoch{epoch} loss:{loss.item()}")
-torch.save(model.state_dict(), "./rnn.pth")
+torch.save(model.state_dict(), "./rnn256.pth")
 '''
+
 
 '''
 모델 평가하기
@@ -102,10 +103,10 @@ loader = DataLoader(dataset, batch_size = 1)
 
 preds = []
 
-total_loss = 0
+total_loss256 = 0
 
 with torch.no_grad():
-    model.load_state_dict(torch.load("rnn.pth", map_location=device))
+    model.load_state_dict(torch.load("rnn256.pth", map_location=device))
 
     for data, label in loader:
         h0 = torch.zeros(5, data.shape[0], 8).to(device)
@@ -116,11 +117,11 @@ with torch.no_grad():
 
         loss = nn.MSELoss()(pred, label.type(torch.FloatTensor).to(device))
 
-        total_loss += loss/len(loader)
+        total_loss256 += loss/len(loader)
 
-print("배치사이즈 32 일 때:", total_loss.item())
+
+print("배치사이즈 256 일 때:",total_loss256.item())
 
 plt.plot(preds, label="prediction")
 plt.plot(dataset.label[30:], label="actual")
 plt.legend()
-#plt.show()

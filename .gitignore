@@ -3,6 +3,8 @@
 *.tar
 *.path
 *.pyc
+*.csv
+*.pth
 
 #ignore cifar-10-python.tar.gz file
 c4/cifar-10-python.tar.gz

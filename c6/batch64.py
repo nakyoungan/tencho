@@ -71,7 +71,7 @@ dataset = Netflix()
 '''
 모델 학습하기
 
-loader = DataLoader(dataset, batch_size=32)
+loader = DataLoader(dataset, batch_size=64)
 optim = Adam(params = model.parameters(), lr=0.0001)
 
 for epoch in range(200):
@@ -92,8 +92,9 @@ for epoch in range(200):
         optim.step()
 
         iterator.set_description(f"epoch{epoch} loss:{loss.item()}")
-torch.save(model.state_dict(), "./rnn.pth")
+torch.save(model.state_dict(), "./rnn64.pth")
 '''
+
 
 '''
 모델 평가하기
@@ -102,10 +103,10 @@ loader = DataLoader(dataset, batch_size = 1)
 
 preds = []
 
-total_loss = 0
+total_loss64 = 0
 
 with torch.no_grad():
-    model.load_state_dict(torch.load("rnn.pth", map_location=device))
+    model.load_state_dict(torch.load("rnn64.pth", map_location=device))
 
     for data, label in loader:
         h0 = torch.zeros(5, data.shape[0], 8).to(device)
@@ -116,11 +117,12 @@ with torch.no_grad():
 
         loss = nn.MSELoss()(pred, label.type(torch.FloatTensor).to(device))
 
-        total_loss += loss/len(loader)
+        total_loss64 += loss/len(loader)
 
-print("배치사이즈 32 일 때:", total_loss.item())
+
+print("배치사이즈 64 일 때:",total_loss64.item())
 
 plt.plot(preds, label="prediction")
 plt.plot(dataset.label[30:], label="actual")
 plt.legend()
-#plt.show()
+
