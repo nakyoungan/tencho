@@ -5,6 +5,7 @@
 *.pyc
 *.csv
 *.pth
+*.xml
 
 #ignore cifar-10-python.tar.gz file
 c4/cifar-10-python.tar.gz
@@ -13,4 +14,11 @@ cifar-10-batches-py
 # specify a folder with slash in the end
 # ignore all files in any directory named temp
 cifar-10-batches-py/
+
+#c7. U-NET data 
+annotations/
+images/
+
+#c9. Let there be color
+Images/
 
