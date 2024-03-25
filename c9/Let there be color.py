@@ -18,6 +18,10 @@ imgs = glob.glob("./Images/*.jpg")
 def rgb2lab(rgb):
     return cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB)
 
+#LAB을 RGB로 변환
+def lab2rgb(lab):
+    return cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
 #학습에 이용할 데이터셋 객체
 class AutoColoring(Dataset):
     def __init__(self):
@@ -235,8 +239,8 @@ class AutoColoringModel(nn.Module):
     
 '''
 모델 학습
-'''
 
+'''
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 model = AutoColoringModel().to(device)
@@ -244,7 +248,7 @@ model = AutoColoringModel().to(device)
 dataset = AutoColoring()
 loader = DataLoader(dataset, batch_size=32, shuffle=True)
 optim = Adam(params=model.parameters(), lr=0.01)
-
+'''
 for epoch in range(200):
     iterator = tqdm.tqdm(loader)
     for L, AB in iterator:
@@ -261,6 +265,7 @@ for epoch in range(200):
 
 torch.save(model.state_dict(), "AutoColor.pth")
 
+'''
 '''
 모델 성능 평가
 '''
@@ -283,7 +288,7 @@ with torch.no_grad():
     pred_LAB = torch.cat([input_tensor, pred_AB], dim=1)
     pred_LAB = torch.squeeze(pred_LAB)
     pred_LAB = pred_LAB.permute(1, 2, 0).cpu().numpy()
-    pred_LAB = lab2rgb(pred_LAB.astype(np.unit8))
+    pred_LAB = lab2rgb(pred_LAB.astype(np.uint8))
 
 plt.subplot(1, 2, 1)
 plt.imshow(real_img)
