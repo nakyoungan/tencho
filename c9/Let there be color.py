@@ -239,7 +239,6 @@ class AutoColoringModel(nn.Module):
     
 '''
 모델 학습
-
 '''
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -248,8 +247,8 @@ model = AutoColoringModel().to(device)
 dataset = AutoColoring()
 loader = DataLoader(dataset, batch_size=32, shuffle=True)
 optim = Adam(params=model.parameters(), lr=0.01)
-'''
-for epoch in range(200):
+
+for epoch in range(500):
     iterator = tqdm.tqdm(loader)
     for L, AB in iterator:
         L = torch.unsqueeze(L, dim=1).to(device)
@@ -263,12 +262,13 @@ for epoch in range(200):
 
         iterator.set_description(f"epoch{epoch} loss: {loss.item()}")
 
-torch.save(model.state_dict(), "AutoColor.pth")
+torch.save(model.state_dict(), "AutoColor_500.pth")
+ 
+
 
 '''
-'''
 모델 성능 평가
-'''
+
 #결과 비교를 위한 실제 이미지
 test_L, test_AB = dataset[0]
 test_L = np.expand_dims(test_L, axis=0)
@@ -299,3 +299,4 @@ plt.imshow(pred_LAB)
 plt.title("predicted image")
 
 plt.show()
+'''
