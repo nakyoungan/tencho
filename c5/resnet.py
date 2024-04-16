@@ -114,10 +114,10 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model = ResNet(num_classes=100)
 model.to(device)
 
-lr = 1e-4
+lr = 1e-5
 optim = Adam(model.parameters(), lr = lr)
 '''
-for epoch in range(100):
+for epoch in range(70):
     iterator = tqdm.tqdm(train_loader)
     for data, label in iterator:
         #최적화를 위해 기울기를 초기화
@@ -133,9 +133,9 @@ for epoch in range(100):
 
         iterator.set_description(f"epoch:{epoch+1} loss:{loss.item()}")
 
-torch.save(model.state_dict(), "ResNet100.pth")
-'''
+torch.save(model.state_dict(), "ResNet70.pth")
 
+'''
 #성능평가
 model.load_state_dict(torch.load("ResNet100.pth", map_location=device))
 
@@ -153,6 +153,7 @@ with torch.no_grad():
 
     true_labels = label.to(device).cpu().numpy()
     predicted_labels = preds.cpu().numpy()
+
     precision = precision_score(true_labels, predicted_labels, average='macro', zero_division=0)
     print(f"Precision: {precision}")
 
@@ -164,16 +165,17 @@ with torch.no_grad():
 
 
 # Confusion Matrix 그리기
-cm = confusion_matrix(true_labels, predicted_labels)
+cm = confusion_matrix(true_labels, predicted_labels, normalize='all')
 
 # Confusion Matrix 시각화
 plt.figure(figsize=(10, 8))
-sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=range(100), yticklabels=range(100))
+sns.heatmap(cm, annot=True, fmt=".2f", cmap="Blues", xticklabels=range(100), yticklabels=range(100))
 plt.xlabel("Predicted labels")
 plt.ylabel("True labels")
 plt.title("Confusion Matrix")
 plt.show()
+print(cm)
+plt.savefig('savefig_default.png')
 
-print(true_labels)
-print("--------------")
-print(predicted_labels)
+print("true_labels:     ", true_labels)
+print("predicted_labels:", predicted_labels)

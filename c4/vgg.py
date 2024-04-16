@@ -1,7 +1,8 @@
 import matplotlib.pylab as plt
 import torchvision.transforms as T
 import torch
-
+import matplotlib.pyplot as plt
+import seaborn as sns
 from cnn import *
 from torch.utils.data.dataloader import DataLoader
 from torch.optim.adam import Adam
@@ -10,6 +11,10 @@ from torchvision.datasets.cifar import CIFAR10
 from torchvision.transforms import ToTensor
 from torchvision.transforms import Compose
 from torchvision.transforms import RandomHorizontalFlip, RandomCrop, Normalize
+from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
+from sklearn.model_selection import cross_val_predict
+from sklearn.metrics import confusion_matrix
+
 
 transforms = Compose([
     RandomCrop((32, 32), padding=4),
@@ -36,7 +41,7 @@ lr = 1e-3
 
 optim = Adam(model.parameters(), lr=lr)
 
-for epoch in range(100):
+for epoch in range(10):
     for data, label in train_loader:
         optim.zero_grad()
 
@@ -65,3 +70,27 @@ with torch.no_grad():
         num_corr += corr
     
     print(f"Accuracy:{num_corr/len(test_data)}")
+    true_labels = label.to(device).cpu().numpy()
+    predicted_labels = preds.cpu().numpy()
+
+    precision = precision_score(true_labels, predicted_labels, average='macro', zero_division=0)
+    print(f"Precision: {precision}")
+
+    recall = recall_score(true_labels, predicted_labels, average='macro', zero_division=0)
+    print(f"Recall: {recall}")
+
+    f1 = f1_score(true_labels, predicted_labels, average='macro', zero_division=0)
+    print(f"F1 Score: {f1}")
+
+
+# Confusion Matrix 그리기
+cm = confusion_matrix(true_labels, predicted_labels, normalize='all')
+
+# Confusion Matrix 시각화
+plt.figure(figsize=(10, 8))
+sns.heatmap(cm, annot=True, fmt=".2f", cmap="Blues", xticklabels=range(10), yticklabels=range(10))
+plt.xlabel("Predicted labels")
+plt.ylabel("True labels")
+plt.title("Confusion Matrix")
+plt.show()
+print(cm)

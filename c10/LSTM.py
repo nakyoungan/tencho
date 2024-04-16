@@ -108,7 +108,7 @@ dataset = TextGeneration()  # 데이터셋 정의
 model = LSTM(num_embeddings=len(dataset.BOW)).to(device)  # 모델 정의
 loader = DataLoader(dataset, batch_size=64)
 optim = Adam(model.parameters(), lr=0.001)
-'''
+
 for epoch in range(200):
    iterator = tqdm.tqdm(loader)
    for data, label in iterator:
@@ -129,7 +129,7 @@ for epoch in range(200):
        iterator.set_description(f"epoch{epoch} loss:{loss.item()}")
 
 torch.save(model.state_dict(), "lstm.pth")
-'''
+
 
 def generate(model, BOW, string="finding an ", strlen=10):
    device = "cuda" if torch.cuda.is_available() else "cpu"

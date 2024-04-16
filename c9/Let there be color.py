@@ -39,10 +39,10 @@ class AutoColoring(Dataset):
         return lab[0], lab[1:]
     
 class LowLevel(nn.Module):
-    def __init__(self):
+    def __init__(self):     #흔히 conv에서 사용하는 pooling 대신 stride를 증가시키는 기법을 사용
         super(LowLevel, self).__init__()
 
-        self.low1 = nn.Conv2d(1, 64, kernel_size=3, stride=2, padding=1)
+        self.low1 = nn.Conv2d(1, 64, kernel_size=3, stride=2, padding=1)    #in_channels(입력 채널 수을 뜻합니다. 흑백 이미지일 경우 1, RGB 값을 가진 이미지일 경우 3 을 가진 경우가 많습니다.), out_channels(출력 채널 수을 뜻합니다)
         self.lb1 = nn.BatchNorm2d(64)
 
         self.low2 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
@@ -61,7 +61,7 @@ class LowLevel(nn.Module):
         self.lb6 = nn.BatchNorm2d(512)
 
         self.sigmoid = nn.Sigmoid()
-
+        
     def forward(self, x):
 
         low = self.low1(x)
@@ -221,7 +221,6 @@ class AutoColoringModel(nn.Module):
 
     def forward(self, x):
         low = self.low(x)
-
         mid = self.mid(low)
         glo = self.glob(low)
 
@@ -246,8 +245,8 @@ dataset = AutoColoring()
 loader = DataLoader(dataset, batch_size=32, shuffle=True)
 optim = Adam(params=model.parameters(), lr=0.01)
 '''
-모델 학습
-for epoch in range(500):
+#모델 학습
+for epoch in range(100):
     iterator = tqdm.tqdm(loader)
     for L, AB in iterator:
         L = torch.unsqueeze(L, dim=1).to(device)
@@ -261,15 +260,15 @@ for epoch in range(500):
 
         iterator.set_description(f"epoch{epoch} loss: {loss.item()}")
 
-torch.save(model.state_dict(), "AutoColor_500.pth")
+torch.save(model.state_dict(), "AutoColor.pth")
  
 
 
-
-모델 성능 평가
 '''
+#모델 성능 평가
+
 #결과 비교를 위한 실제 이미지
-test_L, test_AB = dataset[0]
+test_L, test_AB = dataset[1]
 test_L = np.expand_dims(test_L, axis=0)
 real_img = np.concatenate([test_L, test_AB])
 real_img = real_img.transpose(1,2,0).astype(np.uint8)
@@ -298,3 +297,4 @@ plt.imshow(pred_LAB)
 plt.title("predicted image")
 
 plt.show()
+plt.savefig('그래프.jpg', format='jpeg')
