@@ -136,10 +136,50 @@ for epoch in range(70):
 torch.save(model.state_dict(), "ResNet70.pth")
 
 '''
+model.load_state_dict(torch.load("ResNet.pth", map_location=device))
+
+num_corr = 0
+all_preds = []
+all_labels = []
+
+with torch.no_grad():
+    for data, label in test_loader:
+        output = model(data.to(device))
+        preds = output.argmax(dim=1)
+        corr = preds.eq(label.to(device)).sum().item()
+        num_corr += corr
+        all_preds.extend(preds.cpu().numpy())
+        all_labels.extend(label.cpu().numpy())
+
+accuracy = num_corr / len(test_data)
+print(f"Accuracy: {accuracy}")
+
+f1 = f1_score(all_labels, all_preds, average='macro')  # 'macro' for multiclass classification
+print(f"F1 Score: {f1}")
+
+recall = recall_score(all_labels, all_preds, average='macro')
+print(f"Recall: {recall}")
+
+conf_matrix = confusion_matrix(all_labels, all_preds)
+print("Confusion Matrix:")
+print(conf_matrix)
+
+# Confusion Matrix 시각화
+plt.figure(figsize=(10, 8))
+sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", 
+            xticklabels=range(100), yticklabels=range(100))
+plt.xlabel("Predicted labels")
+plt.ylabel("True labels")
+plt.title("Confusion Matrix")
+plt.show()
+
+'''
 #성능평가
 model.load_state_dict(torch.load("ResNet100.pth", map_location=device))
 
 num_corr = 0
+true_labels = []
+predicted_labels = []
 
 with torch.no_grad():
     for data, label in test_loader:
@@ -147,12 +187,11 @@ with torch.no_grad():
         preds = output.data.max(1)[1]
         corr = preds.eq(label.to(device).data).sum().item()
         num_corr += corr
+        true_labels.extend(preds.cpu().numpy())
+        predicted_labels.extend(label.cpu().numpy())
 
     accuracy = num_corr / len(test_data)
     print(f"Accuracy: {accuracy}")
-
-    true_labels = label.to(device).cpu().numpy()
-    predicted_labels = preds.cpu().numpy()
 
     precision = precision_score(true_labels, predicted_labels, average='macro', zero_division=0)
     print(f"Precision: {precision}")
@@ -166,6 +205,7 @@ with torch.no_grad():
 
 # Confusion Matrix 그리기
 cm = confusion_matrix(true_labels, predicted_labels, normalize='all')
+print(cm)
 
 # Confusion Matrix 시각화
 plt.figure(figsize=(10, 8))
@@ -174,8 +214,4 @@ plt.xlabel("Predicted labels")
 plt.ylabel("True labels")
 plt.title("Confusion Matrix")
 plt.show()
-print(cm)
-plt.savefig('savefig_default.png')
-
-print("true_labels:     ", true_labels)
-print("predicted_labels:", predicted_labels)
+'''
