@@ -9,6 +9,8 @@ import tqdm
 from torchvision.datasets import ImageFolder
 from torch.utils.data.dataloader import DataLoader
 from torch.optim.adam import Adam
+from tensorboardX import SummaryWriter
+writer = SummaryWriter()
 
 from PIL import Image
 
@@ -16,6 +18,7 @@ from PIL import Image
 pth_to_imgs = "./img_align_celeba"
 imgs = glob.glob(os.path.join(pth_to_imgs, "*"))
 
+'''
 #show 9 images
 for i in range(9):
     plt.subplot(3, 3, i+1)
@@ -23,6 +26,7 @@ for i in range(9):
     plt.imshow(img)
 
 plt.show()
+'''
 
 transforms = tf.Compose([
     tf.Resize(64),
@@ -32,7 +36,7 @@ transforms = tf.Compose([
 ])
 
 dataset = ImageFolder(
-    root = "./",
+    root = "./img/",
     transform=transforms
 )
 loader = DataLoader(dataset, batch_size=128, shuffle=True)
@@ -116,8 +120,8 @@ D.apply(weights_init)
 
 G_optim = Adam(G.parameters(), lr = 0.0001, betas = (0.5, 0.999))
 D_optim = Adam(D.parameters(), lr = 0.0001, betas = (0.5, 0.999))
-
-for epochs in range(100):
+'''
+for epochs in range(500):
     iterator = tqdm.tqdm(enumerate(loader, 0), total=len(loader))
 
     for i, data in iterator:
@@ -152,10 +156,14 @@ for epochs in range(100):
         G_optim.step()
 
         iterator.set_description(f"eopch:{epochs} iteration:{i} D_loss:{Dloss} G_loss:{Gloss}")
+    
+    if epochs % 10 == 0:    # 매 10 iteration마다 업데이트
+        writer.add_scalar('D_loss', Dloss.item(), epochs)
+        writer.add_scalar('G_loss', Gloss.item(), epochs)
 
-torch.save(G.state_dict(), "Generator100.pth")
-torch.save(D.state_dict(), "Discriminator100.pth")
-
+torch.save(G.state_dict(), "Generator500.pth")
+torch.save(D.state_dict(), "Discriminator500.pth")
+'''
 
 #평가
 with torch.no_grad():
@@ -166,6 +174,21 @@ with torch.no_grad():
     pred = G(feature_vector).squeeze()
     pred = pred.permute(1, 2, 0).cpu().numpy()
 
+    plt.subplot(1,2,1)
     plt.imshow(pred)
-    plt.title("predicted image")
-    plt.show()
+    plt.title("epoch100 predicted image")
+
+
+with torch.no_grad():
+    G.load_state_dict(
+        torch.load("Generator.pth", map_location=device))
+    
+    feature_vector = torch.randn(1, 100, 1, 1).to(device)
+    pred = G(feature_vector).squeeze()
+    pred = pred.permute(1, 2, 0).cpu().numpy()
+
+    plt.subplot(1,2,2)
+    plt.imshow(pred)
+    plt.title("epoch30 predicted image")
+
+plt.show()
