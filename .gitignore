@@ -13,11 +13,15 @@ cifar-10-batches-py
 c5/cifar-100-python.tar.gz
 c5/cifar-100-python/
 cifar-100-python
+c13/img_align_celeba/
+img_align_celeba
+
 
 # specify a folder with slash in the end
 # ignore all files in any directory named temp
 cifar-10-batches-py/
 cifar-100-python/
+img_align_celeba/
 
 #c7. U-NET data 
 annotations/

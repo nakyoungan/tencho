@@ -8,9 +8,10 @@ from PIL import Image
 
 class CelebA(Dataset):
     def __init__(self):
-        self.imgs = glob.glob("./img/")
+        self.imgs = glob.glob("./img/img_align_celeba/*.jpg")
 
         mean_std = (0.5, 0.5, 0.5)
+
         self.low_res_tf = tf.Compose([
             tf.Resize((32,32)),
             tf.ToTensor(),
@@ -18,7 +19,7 @@ class CelebA(Dataset):
         ])
 
         self.high_res_tf = tf.Compose([
-            tf.Resize((64, 64)),
+            tf.Resize((128, 128)),
             tf.ToTensor(),
             tf.Normalize(mean_std, mean_std)
         ])
@@ -60,22 +61,36 @@ class ResidualBlock(nn.Module):
     
 class UpSample(nn.Sequential):
     def __init__(self, in_channels, out_channels):
-        super(UpSample, self).__init__(
+        super(UpSample, self).__init__()
+        self.upsample_block = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1),
             nn.PixelShuffle(upscale_factor=2),
-            nn.PReLU()
+            nn.PReLU(),
         )
+
+    def forward(self, x):
+        x = self.upsample_block(x)
+
+        return x
+    # def __init__(self, in_channels, out_channels):
+    #     super(UpSample, self).__init__(
+    #         nn.Conv2d(in_channels, out_channels * upscale_factor, kernel_size=3, stride=1, padding=1),
+    #         nn.PixelShuffle(upscale_factor=2),
+    #         nn.PReLU()
+    #     )
 
 class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
 
-        self.gen = nn.Sequential(
+        self.conv1 = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=9, stride=1, padding=4),
             nn.PReLU()
         )
 
-        self.res_blocks = nn.Sequential(
+        self.res_blocks = nn.Sequential(    #5층
+            ResidualBlock(in_channels=64, out_channels=64),
+            ResidualBlock(in_channels=64, out_channels=64),
             ResidualBlock(in_channels=64, out_channels=64),
             ResidualBlock(in_channels=64, out_channels=64),
             ResidualBlock(in_channels=64, out_channels=64),
@@ -84,7 +99,10 @@ class Generator(nn.Module):
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
         self.bn2 = nn.BatchNorm2d(64)
 
-        self.upsample_blocks = nn.Sequential(UpSample(in_channels=64, out_channels=256))
+        self.upsample_blocks = nn.Sequential(   #2층
+            UpSample(in_channels=64, out_channels=256),
+            UpSample(in_channels=64, out_channels=256),
+        )
 
         self.conv3 = nn.Conv2d(64, 3, kernel_size=9, stride=1, padding=4)
 
@@ -93,18 +111,32 @@ class Generator(nn.Module):
         x_ = x
 
         x = self.res_blocks(x)
+
         x = self.conv2(x)
         x = self.bn2(x)
         x = x + x_
 
         x = self.upsample_blocks(x)
+
         x = self.conv3(x)
 
         return x
     
-class DiscBlock(nn.Mocule):
+class DiscBlock1(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super(DiscBlock, self).__init__()
+        super(DiscBlock1, self).__init__()
+
+        self.layers = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.LeakyReLU()
+        )
+    def forward(self, x):
+        return self.layers(x)
+
+class DiscBlock2(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(DiscBlock2, self).__init__()
 
         self.layers = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=2, padding=1),
@@ -123,17 +155,29 @@ class Discriminator(nn.Module):
             nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
             nn.LeakyReLU()
         )
+        
+        self.blocks1 = DiscBlock2(in_channels=64, out_channels=64)
+        self.blocks2 = DiscBlock1(in_channels=64, out_channels=128)
+        self.blocks3 = DiscBlock2(in_channels=128, out_channels=128)
+        self.blocks4 = DiscBlock1(in_channels=128, out_channels=256)
+        self.blocks5 = DiscBlock2(in_channels=256, out_channels=256)
+        self.blocks6 = DiscBlock1(in_channels=256, out_channels=512)
+        self.blocks7 = DiscBlock2(in_channels=512, out_channels=512)
 
-        self.blocks = DiscBlock(in_channels=64, out_channels=64)
-
-        self.fc1 = nn.Linear(65536, 1024)
+        self.fc1 = nn.Linear(8 * 8 * 512, 1024)
         self.activation = nn.LeakyReLU()
         self.fc2 = nn.Linear(1024, 1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         x = self.conv1(x)
-        x = self.blocks(x)
+        x = self.blocks1(x)
+        x = self.blocks2(x)
+        x = self.blocks3(x)
+        x = self.blocks4(x)
+        x = self.blocks5(x)
+        x = self.blocks6(x)
+        x = self.blocks7(x)
 
         x = torch.flatten(x, start_dim=1)
 
@@ -143,7 +187,8 @@ class Discriminator(nn.Module):
         x = self.sigmoid(x)
 
         return x 
-    
+  
+
 class FeatureExtractor(nn.Module):
     def __init__(self):
         super(FeatureExtractor, self).__init__()
@@ -153,7 +198,9 @@ class FeatureExtractor(nn.Module):
 
     def forward(self, img):
         return self.feature_extractor(img)
-    
+
+
+ 
 import tqdm
 
 from torch.utils.data.dataloader import DataLoader
@@ -201,7 +248,7 @@ for epoch in range(1):
         loss_D.backward()
         D_optim.step()
 
-        iterator.set_description(f"eposh:{epoch} G_loss:{GAN_loss} D_loss:{loss_D}")
+        iterator.set_description(f"epoch:{epoch} G_loss:{GAN_loss} D_loss:{loss_D}")
 
 torch.save(G.state_dict(), "SRGAN_G.pth")
 torch.save(D.state_dict(), "SRGAN_D.pth")

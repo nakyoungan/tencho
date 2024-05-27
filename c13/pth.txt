@@ -1,0 +1,16 @@
+Generator.pth
+lr : 0.0001
+epoch : 50
+
+Generator50.pth
+lr : 0.0002
+epoch : 50
+
+Generator100.pth
+lr : 0.0001
+epoch : 100
+
+Generator1.pth
+Discriminator5.pth
+lr : 0.0002
+epoch : 50
