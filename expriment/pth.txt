@@ -1,0 +1,8 @@
+D(SR)_epoch.pth 
+G(SR)_epoch.pth 
+lr : 0.0002
+D:G = 1:1
+SRGAN 으로 단순 coloization 원래는 LAB 로 사용하지만 RGB로 사용
+Generator : Conv2d - PReLU - ResidualBlock(Conv2d-BatchNorm2d-PReLU-Conv2d-BatchNorm2d + skip connection) * 5 - Conv2d - BatchNorm2d - Conv2d + skip connection
+Discriminator : Conv2d - LeakyReLU - { DiscBlock2(Conv2d(kernel_size=3, stride=2, padding=1) - BatchNorm2d - LeakyReLU) - DiscBlock1(Conv2d(kernel_size=3, stride=1, padding=1) - BatchNorm2d - LeakyReLU) }
+ * 3 - DiscBlock2 - Linear - LeakyReLU - Linear - Sigmoid

@@ -21,7 +21,7 @@ class CelebA(Dataset):
 
         self.grayscale = tf.Compose([
             tf.Resize((64,64)),
-            tf.Grayscale(num_output_channels=1),
+            tf.Grayscale(num_output_channels=1),    #흑백 이미지 input
             tf.ToTensor(),
             tf.Normalize((0.5, ), (0.5, ))
         ])
@@ -41,8 +41,8 @@ class CelebA(Dataset):
         grayscale = self.grayscale(img)
         colorization = self.colorization(img)
 
-        return [grayscale, colorization]
-    
+        return grayscale, colorization
+
 #생성자 기본 블록 (skip connection)
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -212,7 +212,8 @@ criterion_content = torch.nn.L1Loss()
 
 train_gen_losses, train_disc_losses, train_counter = [], [], []
 
-for epoch in range(1):
+
+for epoch in range(100):
     gen_loss, disc_loss = 0, 0
     iterator = tqdm.tqdm(loader)
 
@@ -227,14 +228,12 @@ for epoch in range(1):
         # Generate a colorization image from grayscale input
         gen_color = G(grayscale.to(device))
         # Adversarial loss
-        #GAN_loss = criterion_GAN(D(gen_color), label_true)
-        GAN_Loss = nn.MSELoss()(D(gen_color), label_true)
+        GAN_loss = criterion_GAN(D(gen_color), label_true)
 
         # Content loss
         fake_features = feature_extractor(gen_color)
         real_features = feature_extractor(colorization.to(device)) 
-        #content_loss = criterion_content(fake_features, real_features)
-        content_loss = nn.L1Loss()(fake_features, real_features)
+        content_loss = criterion_content(fake_features, real_features.detach())
         
         # Total loss
         loss_G = content_loss + 1e-3 * GAN_loss
@@ -243,10 +242,8 @@ for epoch in range(1):
 
         ### Train Discriminator
         # Loss of colorization and grayscale images
-        # real_loss = criterion_GAN(D(colorization.to(device)), label_true)
-        # fake_loss = criterion_GAN(D(gen_color), label_false)
-        real_loss = nn.MSELoss()(D(colorization.to(device)), label_true)
-        fake_loss = nn.MSELoss()(D(gen_color.detach()), label_false)
+        real_loss = criterion_GAN(D(colorization.to(device)), label_true)
+        fake_loss = criterion_GAN(D(gen_color.detach()), label_false)
         
         # Total loss
         loss_D = (real_loss + fake_loss) / 2
@@ -254,7 +251,7 @@ for epoch in range(1):
         D_optim.step()
 
         iterator.set_description(f"epoch:{epoch} G_loss:{loss_G} D_loss:{loss_D}")
-
+        
         # gen_loss += loss_G.item()
         # train_gen_losses.append(loss_G.item())
 
@@ -264,27 +261,27 @@ for epoch in range(1):
         # train_counter.append(i*batch_size + gen_color.size(0) + epoch*len(loader.dataset))
         # tqdm_bar.set_postfix(gen_loss=gen_loss/(i+1), disc_loss=disc_loss/(i+1))
 
-torch.save(G.state_dict(), "G.pth")
-torch.save(D.state_dict(), "D.pth")
+torch.save(G.state_dict(), "G_100.pth")
+torch.save(D.state_dict(), "D_100.pth")
 
 
 #평가
-G.load_state_dict(torch.load("G.pth", map_location=device))
+G.load_state_dict(torch.load("G_100.pth", map_location=device))
 
 with torch.no_grad():
-    low_res, high_res = dataset[0]
+    grayscale, colorization = dataset[0]
     
-    input_tensor = torch.unsqueeze(low_res, dim=0).to(device)
+    input_tensor = torch.unsqueeze(grayscale, dim=0).to(device)
 
     pred = G(input_tensor)
     pred = pred.squeeze()
     pred = pred.permute(1, 2, 0).cpu().numpy()
 
-    low_res = low_res.permute(1,2,0).numpy()
+    grayscale = grayscale.permute(1,2,0).numpy()
 
     plt.subplot(1,2,1)
     plt.title("grayscale image")
-    plt.imshow(low_res)
+    plt.imshow(grayscale, cmap="gray")  # Display grayscale image
     plt.subplot(1,2,2)
     plt.imshow(pred)
     plt.title("colorization image")
